@@ -72,14 +72,15 @@ async function seedUsuario(usuarioId: string) {
 
 // ============ CRUD GENÉRICO ============
 function crud<T extends { id: string; usuarioId: string }>(tabla: keyof typeof db) {
+  const table = db[tabla] as any
   return {
     listar: (usuarioId: string) =>
-      (db[tabla] as any).where('usuarioId').equals(usuarioId).toArray() as Promise<T[]>,
+      table.where('usuarioId').equals(usuarioId).toArray() as Promise<T[]>,
     crear: (item: Omit<T, 'id' | 'creadoEn'>) =>
-      (db[tabla] as any).add({ ...item, id: uid(), creadoEn: now() }) as Promise<string>,
+      table.add({ ...item, id: uid(), creadoEn: now() }) as Promise<string>,
     actualizar: (id: string, cambios: Partial<T>) =>
-      (db[tabla] as any).update(id, cambios),
-    eliminar: (id: string) => (db[tabla] as any).delete(id),
+      table.update(id, cambios) as Promise<number>,
+    eliminar: (id: string) => table.delete(id) as Promise<void>,
   }
 }
 
@@ -90,11 +91,11 @@ export const gastos = {
     const d = new Date(anio, mes - 1, 1).toISOString()
     const h = new Date(anio, mes, 0, 23, 59, 59).toISOString()
     return db.gastos.where('usuarioId').equals(usuarioId)
-      .filter(g => g.fecha >= d && g.fecha <= h).toArray()
+      .filter((g: Gasto) => g.fecha >= d && g.fecha <= h).toArray()
   },
   totalMes: async (usuarioId: string, anio: number, mes: number) => {
     const items = await gastos.porMes(usuarioId, anio, mes)
-    return items.reduce((s, g) => s + g.monto, 0)
+    return items.reduce((s: number, g: Gasto) => s + g.monto, 0)
   },
 }
 
@@ -105,11 +106,11 @@ export const ingresos = {
     const d = new Date(anio, mes - 1, 1).toISOString()
     const h = new Date(anio, mes, 0, 23, 59, 59).toISOString()
     return db.ingresos.where('usuarioId').equals(usuarioId)
-      .filter(i => i.fecha >= d && i.fecha <= h).toArray()
+      .filter((i: Ingreso) => i.fecha >= d && i.fecha <= h).toArray()
   },
   totalMes: async (usuarioId: string, anio: number, mes: number) => {
     const items = await ingresos.porMes(usuarioId, anio, mes)
-    return items.reduce((s, i) => s + i.monto, 0)
+    return items.reduce((s: number, i: Ingreso) => s + i.monto, 0)
   },
 }
 
@@ -135,7 +136,7 @@ export const categorias = {
   ...crud<Categoria>('categorias'),
   porTipo: (usuarioId: string, tipo: Categoria['tipo']) =>
     db.categorias.where('usuarioId').equals(usuarioId)
-      .filter(c => c.tipo === tipo).toArray(),
+      .filter((c: Categoria) => c.tipo === tipo).toArray(),
 }
 
 // ============ AJUSTES ============
