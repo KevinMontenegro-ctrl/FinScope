@@ -37,6 +37,7 @@ const eliminar = async (id: string) => {
 }
 
 const nombreCat = (id: string) => cats.value.find(c => c.id === id)?.nombre ?? '—'
+const colorCat = (id: string) => cats.value.find(c => c.id === id)?.color ?? '#a3a3a3'
 
 onMounted(cargar)
 </script>
@@ -56,16 +57,24 @@ onMounted(cargar)
       <button class="primary">Agregar gasto</button>
     </form>
 
-    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+    <div class="card total-card">
       <span class="muted">Total registrado</span>
-      <strong style="font-size:1.05rem">{{ money(totalMostrado) }}</strong>
+      <strong class="total-amount">{{ money(totalMostrado) }}</strong>
     </div>
 
     <ul>
       <li v-for="g in lista" :key="g.id" class="item">
-        <div>
-          <div style="font-weight:500">{{ money(g.monto) }} <span class="muted">— {{ g.descripcion || '(sin descripción)' }}</span></div>
-          <div class="muted" style="margin-top:.15rem">{{ nombreCat(g.categoriaId) }} · {{ g.fecha.slice(0, 10) }}</div>
+        <div class="item-info">
+          <div class="cat-dot" :style="{ background: colorCat(g.categoriaId) }"></div>
+          <div>
+            <div style="font-weight: 500;">
+              {{ money(g.monto) }}
+              <span class="muted">— {{ g.descripcion || '(sin descripción)' }}</span>
+            </div>
+            <div class="muted" style="margin-top: .15rem;">
+              {{ nombreCat(g.categoriaId) }} · {{ g.fecha.slice(0, 10) }}
+            </div>
+          </div>
         </div>
         <button @click="eliminar(g.id)">Eliminar</button>
       </li>
@@ -73,3 +82,35 @@ onMounted(cargar)
     </ul>
   </div>
 </template>
+
+<style scoped>
+/* Card del total con un sutil difuminado */
+.total-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+}
+
+.total-amount {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* Fila con puntito de color de la categoría */
+.item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cat-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+}
+</style>

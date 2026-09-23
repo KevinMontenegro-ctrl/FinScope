@@ -43,6 +43,9 @@ const registrar = async () => {
 
 <template>
   <div class="auth-page">
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+
     <form class="auth-card wide" @submit.prevent="registrar">
       <div class="auth-logo">
         <span class="auth-logo-icon">💰</span>
@@ -113,51 +116,77 @@ const registrar = async () => {
 </template>
 
 <style scoped>
+/* Reutiliza el mismo bloque que login.vue y añade .wide */
 .auth-page {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 1.5rem;
   background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+.bg-blob-1 {
+  width: 500px; height: 500px;
+  background: rgba(0, 0, 0, 0.06);
+  top: -180px; left: -180px;
+}
+.bg-blob-2 {
+  width: 450px; height: 450px;
+  background: rgba(0, 0, 0, 0.04);
+  bottom: -160px; right: -160px;
 }
 
 .auth-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   padding: 2.5rem 2rem 2rem;
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--border-strong);
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  box-shadow: var(--shadow-md);
-  animation: auth-in 0.4s ease-out;
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  animation: auth-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .auth-card.wide {
   max-height: 95vh;
   overflow-y: auto;
 }
 @keyframes auth-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .auth-logo { display: flex; justify-content: center; margin-bottom: 0.25rem; }
 .auth-logo-icon {
-  width: 52px; height: 52px;
+  width: 56px; height: 56px;
   display: grid; place-items: center;
   font-size: 1.5rem;
-  border-radius: 14px;
-  background: var(--bg-elevated);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f5f5f5, #ffffff);
   border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
 }
 
 .auth-title {
   margin: 0;
   text-align: center;
   font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.03em;
@@ -175,17 +204,21 @@ const registrar = async () => {
   width: 100%;
   padding: 0.75rem 0.95rem;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--bg-elevated);
   color: var(--text);
   font-size: 0.925rem;
   font-family: 'Inter', sans-serif;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
+  box-shadow: var(--shadow-xs);
 }
 .auth-field input::placeholder { color: var(--text-faint); }
-.auth-field input:hover { border-color: var(--border-strong); }
-.auth-field input:focus { border-color: var(--border-hover); background: var(--surface); }
+.auth-field input:hover { border-color: var(--border-hover); }
+.auth-field input:focus {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
 
 .auth-input-wrap { position: relative; }
 .auth-input-wrap input { padding-right: 2.8rem; }
@@ -203,14 +236,14 @@ const registrar = async () => {
   opacity: 0.6;
   transition: opacity 0.15s, background 0.15s;
 }
-.auth-toggle-pass:hover { opacity: 1; background: var(--surface-hover); }
+.auth-toggle-pass:hover { opacity: 1; background: var(--bg-soft); }
 
 .auth-error {
   margin: 0;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
-  background: rgba(248, 113, 113, 0.08);
-  border: 1px solid rgba(248, 113, 113, 0.25);
+  background: var(--danger-soft);
+  border: 1px solid rgba(220, 38, 38, 0.2);
   color: var(--danger);
   font-size: 0.825rem;
   text-align: center;
@@ -227,19 +260,24 @@ const registrar = async () => {
   color: var(--accent-text);
   cursor: pointer;
   background: var(--accent);
-  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  transition: background 0.15s, opacity 0.15s, transform 0.1s, box-shadow 0.2s;
   display: grid;
   place-items: center;
   min-height: 46px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
-.auth-btn:hover:not(:disabled) { background: #e5e5e5; }
-.auth-btn:active:not(:disabled) { transform: scale(0.99); }
-.auth-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.auth-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+.auth-btn:active:not(:disabled) { transform: translateY(0); }
+.auth-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 
 .auth-spinner {
   width: 18px; height: 18px;
-  border: 2px solid rgba(10, 10, 10, 0.2);
-  border-top-color: #0a0a0a;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: auth-spin 0.7s linear infinite;
 }

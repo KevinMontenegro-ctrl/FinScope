@@ -8,6 +8,9 @@ export default defineNuxtConfig({
     port: 3000,
   },
 
+  // 👇 Carga del CSS global (método oficial)
+  css: ['~/assets/css/main.css'],
+
   app: {
     head: {
       title: 'FinScope · Finanzas Personales',
@@ -16,7 +19,7 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Gestiona tus finanzas personales.' },
-        { name: 'theme-color', content: '#0a0a0a' },
+        { name: 'theme-color', content: '#fafafa' },
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },

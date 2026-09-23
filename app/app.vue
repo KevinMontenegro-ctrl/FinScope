@@ -5,23 +5,25 @@ const usuario = useState<Usuario | null>('usuario', () => null)
 const route = useRoute()
 const listo = ref(false)
 
-const rutasPublicas = ['/login', '/registro']
-
 onMounted(async () => {
-  const u = await auth.usuarioActual()
-  usuario.value = u
+  // 1. Limpiar cualquier sesión guardada en IndexedDB
+  //    → Esto fuerza que cada arranque pida login
+  await auth.cerrarSesion()
+  usuario.value = null
 
-  if (!u && !rutasPublicas.includes(route.path)) {
+  // 2. Redirigir a /login si no está ya en una ruta pública
+  const rutasPublicas = ['/login', '/registro']
+  if (!rutasPublicas.includes(route.path)) {
     await navigateTo('/login')
   }
 
+  // 3. Mostrar la app
   listo.value = true
 })
 </script>
 
 <template>
   <template v-if="listo">
-    <!-- 👇 ESTO ES LO QUE FALTA SI VES LA PÁGINA SIN HEADER -->
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>

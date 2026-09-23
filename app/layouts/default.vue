@@ -31,17 +31,25 @@ watch(() => route.path, () => (menuAbierto.value = false))
   <div class="layout">
     <header class="header">
       <div class="header-inner">
+        <!-- Marca -->
         <NuxtLink to="/" class="brand">
           <span class="brand-icon">💰</span>
           <span class="brand-name">FinScope</span>
         </NuxtLink>
 
+        <!-- Nav desktop -->
         <nav class="nav-desktop">
-          <NuxtLink v-for="l in navLinks" :key="l.to" :to="l.to" class="nav-link">
+          <NuxtLink
+            v-for="l in navLinks"
+            :key="l.to"
+            :to="l.to"
+            class="nav-link"
+          >
             {{ l.label }}
           </NuxtLink>
         </nav>
 
+        <!-- Usuario -->
         <div class="user-area">
           <div class="user-info">
             <div class="avatar">{{ inicial }}</div>
@@ -56,6 +64,7 @@ watch(() => route.path, () => (menuAbierto.value = false))
           </button>
         </div>
 
+        <!-- Botón móvil -->
         <button class="menu-toggle" @click="menuAbierto = !menuAbierto" aria-label="Menú">
           <svg v-if="!menuAbierto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="3" y1="6" x2="21" y2="6" />
@@ -69,6 +78,7 @@ watch(() => route.path, () => (menuAbierto.value = false))
         </button>
       </div>
 
+      <!-- Nav móvil -->
       <transition name="slide-down">
         <nav v-if="menuAbierto" class="nav-mobile">
           <NuxtLink v-for="l in navLinks" :key="l.to" :to="l.to" class="nav-link-mobile">
@@ -85,16 +95,23 @@ watch(() => route.path, () => (menuAbierto.value = false))
 </template>
 
 <style scoped>
-.layout { min-height: 100vh; display: flex; flex-direction: column; }
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
+/* ============ HEADER CON PRESENCIA ============ */
 .header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  /* Fondo blanco SÓLIDO para que se distinga del body */
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  /* Sombra suave que separa el header del contenido */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .header-inner {
@@ -106,26 +123,38 @@ watch(() => route.path, () => (menuAbierto.value = false))
   gap: 1.5rem;
 }
 
-.brand { display: flex; align-items: center; gap: 0.55rem; flex-shrink: 0; }
-.brand-icon {
-  width: 30px; height: 30px;
-  display: grid; place-items: center;
-  border-radius: 8px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  font-size: 0.9rem;
+/* ============ MARCA ============ */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
 }
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #f5f5f5, #ffffff);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.95rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 .brand-name {
   font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0a0a0a;
   letter-spacing: -0.02em;
 }
 
+/* ============ NAV DESKTOP ============ */
 .nav-desktop {
   display: flex;
-  gap: 0.15rem;
+  gap: 0.2rem;
   flex: 1;
   overflow-x: auto;
   scrollbar-width: none;
@@ -133,33 +162,57 @@ watch(() => route.path, () => (menuAbierto.value = false))
 .nav-desktop::-webkit-scrollbar { display: none; }
 
 .nav-link {
-  padding: 0.45rem 0.75rem;
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  color: #525252;
+  font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
   transition: color 0.15s, background 0.15s;
 }
-.nav-link:hover { color: var(--text); background: var(--surface); }
-.nav-link.router-link-active { color: var(--text); background: var(--surface); }
 
-.user-area { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-.user-info { display: flex; align-items: center; gap: 0.55rem; }
-.avatar {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 600;
-  font-size: 0.75rem;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
+.nav-link:hover {
+  color: #0a0a0a;
+  background: #f5f5f5;
 }
+
+.nav-link.router-link-active {
+  color: #0a0a0a;
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+/* ============ ÁREA DE USUARIO ============ */
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #ffffff;
+  background: #171717;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
 .user-name {
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  font-size: 0.85rem;
+  color: #525252;
   font-weight: 500;
   max-width: 120px;
   overflow: hidden;
@@ -168,62 +221,94 @@ watch(() => route.path, () => (menuAbierto.value = false))
 }
 
 .logout {
-  width: 32px; height: 32px;
-  display: grid; place-items: center;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
   border-radius: 8px;
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #737373;
   cursor: pointer;
   transition: all 0.15s;
 }
-.logout:hover { border-color: var(--border-hover); color: var(--text); }
 
+.logout:hover {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.25);
+  color: #dc2626;
+}
+
+/* ============ MENÚ MÓVIL ============ */
 .menu-toggle {
   display: none;
-  width: 34px; height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #525252;
   cursor: pointer;
   transition: all 0.15s;
   place-items: center;
 }
-.menu-toggle:hover { border-color: var(--border-hover); color: var(--text); }
+
+.menu-toggle:hover {
+  background: #f5f5f5;
+  color: #0a0a0a;
+}
 
 .nav-mobile {
   display: flex;
   flex-direction: column;
   padding: 0.5rem 1rem 1rem;
   gap: 0.15rem;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
 }
+
 .nav-link-mobile {
   padding: 0.7rem 0.9rem;
   border-radius: 8px;
-  color: var(--text-muted);
+  color: #525252;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.15s;
 }
-.nav-link-mobile:hover { background: var(--surface); color: var(--text); }
-.nav-link-mobile.router-link-active { background: var(--surface); color: var(--text); }
 
-.slide-down-enter-active, .slide-down-leave-active {
+.nav-link-mobile:hover {
+  background: #f5f5f5;
+  color: #0a0a0a;
+}
+
+.nav-link-mobile.router-link-active {
+  background: #f5f5f5;
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
   transition: opacity 0.15s, transform 0.2s;
 }
-.slide-down-enter-from, .slide-down-leave-to {
+
+.slide-down-enter-from,
+.slide-down-leave-to {
   opacity: 0;
   transform: translateY(-6px);
 }
 
+/* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
   .nav-desktop { display: none; }
   .menu-toggle { display: grid; }
   .user-name { display: none; }
-  .header-inner { gap: 0.75rem; justify-content: space-between; }
+  .header-inner {
+    gap: 0.75rem;
+    justify-content: space-between;
+  }
 }
+
 @media (max-width: 500px) {
   .brand-name { display: none; }
 }
