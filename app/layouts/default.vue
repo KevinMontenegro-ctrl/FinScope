@@ -3,7 +3,7 @@ import { auth, type Usuario } from '~/database'
 
 const usuario = useState<Usuario | null>('usuario', () => null)
 const route = useRoute()
-const menuAbierto = ref(false)
+const sidebarAbierto = ref(false)
 
 const salir = async () => {
   await auth.cerrarSesion()
@@ -12,48 +12,58 @@ const salir = async () => {
 }
 
 const navLinks = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/gastos', label: 'Gastos' },
-  { to: '/ingresos', label: 'Ingresos' },
-  { to: '/metas', label: 'Metas' },
-  { to: '/presupuestos', label: 'Presupuestos' },
-  { to: '/categorias', label: 'Categorías' },
-  { to: '/reportes', label: 'Reportes' },
-  { to: '/ajustes', label: 'Ajustes' },
+  { to: '/', label: 'Dashboard', icon: '📊' },
+  { to: '/gastos', label: 'Gastos', icon: '💸' },
+  { to: '/ingresos', label: 'Ingresos', icon: '💰' },
+  { to: '/metas', label: 'Metas', icon: '🎯' },
+  { to: '/presupuestos', label: 'Presupuestos', icon: '📉' },
+  { to: '/categorias', label: 'Categorías', icon: '🏷️' },
+  { to: '/reportes', label: 'Reportes', icon: '📈' },
+  { to: '/ajustes', label: 'Ajustes', icon: '⚙️' },
 ]
 
 const inicial = computed(() => usuario.value?.nombre?.charAt(0).toUpperCase() ?? '?')
 
-watch(() => route.path, () => (menuAbierto.value = false))
+watch(() => route.path, () => (sidebarAbierto.value = false))
 </script>
 
 <template>
   <div class="layout">
-    <header class="header">
-      <div class="header-inner">
-        <!-- Marca -->
-        <NuxtLink to="/" class="brand">
-          <span class="brand-icon">💰</span>
-          <span class="brand-name">FinScope</span>
+    <!-- Backdrop móvil -->
+    <div
+      v-if="sidebarAbierto"
+      class="backdrop"
+      @click="sidebarAbierto = false"
+    ></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="{ abierto: sidebarAbierto }">
+      <!-- Marca -->
+      <NuxtLink to="/" class="brand">
+        <span class="brand-icon">💰</span>
+        <span class="brand-name">FinScope</span>
+      </NuxtLink>
+
+      <!-- Nav -->
+      <nav class="nav">
+        <NuxtLink
+          v-for="l in navLinks"
+          :key="l.to"
+          :to="l.to"
+          class="nav-item"
+        >
+          <span class="nav-icon">{{ l.icon }}</span>
+          <span class="nav-label">{{ l.label }}</span>
         </NuxtLink>
+      </nav>
 
-        <!-- Nav desktop -->
-        <nav class="nav-desktop">
-          <NuxtLink
-            v-for="l in navLinks"
-            :key="l.to"
-            :to="l.to"
-            class="nav-link"
-          >
-            {{ l.label }}
-          </NuxtLink>
-        </nav>
-
-        <!-- Usuario -->
-        <div class="user-area">
-          <div class="user-info">
-            <div class="avatar">{{ inicial }}</div>
-            <span class="user-name">{{ usuario?.nombre }}</span>
+      <!-- Tarjeta de ahorro (opcional) -->
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="avatar">{{ inicial }}</div>
+          <div class="user-meta">
+            <div class="user-name">{{ usuario?.nombre }}</div>
+            <div class="user-email">{{ usuario?.email }}</div>
           </div>
           <button class="logout" @click="salir" title="Cerrar sesión">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -63,138 +73,168 @@ watch(() => route.path, () => (menuAbierto.value = false))
             </svg>
           </button>
         </div>
+      </div>
+    </aside>
 
-        <!-- Botón móvil -->
-        <button class="menu-toggle" @click="menuAbierto = !menuAbierto" aria-label="Menú">
-          <svg v-if="!menuAbierto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <!-- Contenido principal -->
+    <div class="main-wrapper">
+      <!-- Topbar móvil -->
+      <header class="topbar">
+        <button class="menu-toggle" @click="sidebarAbierto = !sidebarAbierto" aria-label="Menú">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="12" x2="21" y2="12" />
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
-          <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
         </button>
-      </div>
+        <NuxtLink to="/" class="topbar-brand">
+          <span class="brand-icon-sm">💰</span>
+          <span>FinScope</span>
+        </NuxtLink>
+        <div class="topbar-avatar">{{ inicial }}</div>
+      </header>
 
-      <!-- Nav móvil -->
-      <transition name="slide-down">
-        <nav v-if="menuAbierto" class="nav-mobile">
-          <NuxtLink v-for="l in navLinks" :key="l.to" :to="l.to" class="nav-link-mobile">
-            {{ l.label }}
-          </NuxtLink>
-        </nav>
-      </transition>
-    </header>
-
-    <main>
-      <slot />
-    </main>
+      <main class="content">
+        <slot />
+      </main>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* ============ LAYOUT ============ */
 .layout {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   position: relative;
 }
 
-/* ============ HEADER CON PRESENCIA ============ */
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  /* Fondo blanco SÓLIDO para que se distinga del body */
-  background: #ffffff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  /* Sombra suave que separa el header del contenido */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+/* ============ BACKDROP MÓVIL ============ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 90;
+  animation: fade-in 0.2s ease-out;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.header-inner {
-  max-width: 1160px;
-  margin: 0 auto;
-  padding: 0.85rem 1.5rem;
+/* ============ SIDEBAR ============ */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px;
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
+  flex-direction: column;
+  padding: 1.35rem 1rem 1rem;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-right: 1px solid var(--border);
+  z-index: 100;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ============ MARCA ============ */
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  flex-shrink: 0;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 1.75rem;
 }
 
 .brand-icon {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #f5f5f5, #ffffff);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #10b981, #34d399);
   font-size: 0.95rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
 }
 
 .brand-name {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #0a0a0a;
-  letter-spacing: -0.02em;
+  color: var(--text);
+  letter-spacing: -0.03em;
 }
 
-/* ============ NAV DESKTOP ============ */
-.nav-desktop {
+/* ============ NAV ============ */
+.nav {
   display: flex;
-  gap: 0.2rem;
+  flex-direction: column;
+  gap: 0.15rem;
   flex: 1;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.nav-desktop::-webkit-scrollbar { display: none; }
-
-.nav-link {
-  padding: 0.5rem 0.8rem;
-  border-radius: 8px;
-  color: #525252;
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-  transition: color 0.15s, background 0.15s;
+  overflow-y: auto;
+  padding-bottom: 1rem;
 }
 
-.nav-link:hover {
-  color: #0a0a0a;
-  background: #f5f5f5;
-}
-
-.nav-link.router-link-active {
-  color: #0a0a0a;
-  background: #f5f5f5;
-  font-weight: 600;
-}
-
-/* ============ ÁREA DE USUARIO ============ */
-.user-area {
+.nav-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  flex-shrink: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s;
+  position: relative;
 }
 
-.user-info {
+.nav-item:hover {
+  background: var(--bg-soft);
+  color: var(--text);
+}
+
+.nav-item.router-link-active {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+.nav-item.router-link-active::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+
+.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-label { flex: 1; }
+
+/* ============ SIDEBAR FOOTER ============ */
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.user-chip {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
 }
+
+.user-chip:hover { background: var(--bg-soft); }
 
 .avatar {
   width: 32px;
@@ -205,111 +245,154 @@ watch(() => route.path, () => (menuAbierto.value = false))
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
   font-size: 0.8rem;
-  color: #ffffff;
-  background: #171717;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
+}
+
+.user-meta {
+  flex: 1;
+  min-width: 0;
 }
 
 .user-name {
-  font-size: 0.85rem;
-  color: #525252;
-  font-weight: 500;
-  max-width: 120px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-email {
+  font-size: 0.72rem;
+  color: var(--text-dim);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .logout {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #737373;
+  border: none;
+  color: var(--text-dim);
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
 }
 
 .logout:hover {
-  background: #fef2f2;
-  border-color: rgba(220, 38, 38, 0.25);
-  color: #dc2626;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
-/* ============ MENÚ MÓVIL ============ */
-.menu-toggle {
-  display: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #525252;
-  cursor: pointer;
-  transition: all 0.15s;
-  place-items: center;
-}
-
-.menu-toggle:hover {
-  background: #f5f5f5;
-  color: #0a0a0a;
-}
-
-.nav-mobile {
+/* ============ MAIN ============ */
+.main-wrapper {
+  flex: 1;
+  margin-left: 240px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 1rem 1rem;
-  gap: 0.15rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  background: #ffffff;
 }
 
-.nav-link-mobile {
-  padding: 0.7rem 0.9rem;
+/* ============ TOPBAR (solo móvil) ============ */
+.topbar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.menu-toggle {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.menu-toggle:hover { background: var(--bg-soft); }
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  flex: 1;
+}
+
+.brand-icon-sm {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
   border-radius: 8px;
-  color: #525252;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.15s;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  font-size: 0.85rem;
 }
 
-.nav-link-mobile:hover {
-  background: #f5f5f5;
-  color: #0a0a0a;
+.topbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #34d399);
 }
 
-.nav-link-mobile.router-link-active {
-  background: #f5f5f5;
-  color: #0a0a0a;
-  font-weight: 600;
-}
-
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: opacity 0.15s, transform 0.2s;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-6px);
+/* ============ CONTENT ============ */
+.content {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 2rem 3rem;
+  position: relative;
+  z-index: 1;
 }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
-  .nav-desktop { display: none; }
-  .menu-toggle { display: grid; }
-  .user-name { display: none; }
-  .header-inner {
-    gap: 0.75rem;
-    justify-content: space-between;
+  .sidebar {
+    transform: translateX(-100%);
   }
-}
-
-@media (max-width: 500px) {
-  .brand-name { display: none; }
+  .sidebar.abierto {
+    transform: translateX(0);
+    box-shadow: var(--shadow-xl);
+  }
+  .main-wrapper {
+    margin-left: 0;
+  }
+  .topbar {
+    display: flex;
+  }
+  .content {
+    padding: 1.25rem 1rem 2.5rem;
+  }
 }
 </style>
