@@ -4,12 +4,12 @@ import { auth } from '~/database'
 
 export default defineNuxtRouteMiddleware(async (to: RouteLocationNormalized) => {
   const usuario = await auth.usuarioActual()
-  const publicas = ['/login', '/registro']
+  const rutasPublicas = ['/login', '/registro']
 
-  if (!usuario && !publicas.includes(to.path)) {
+  if (!usuario && !rutasPublicas.includes(to.path)) {
     return navigateTo('/login')
   }
-  if (usuario && publicas.includes(to.path)) {
+  if (usuario && rutasPublicas.includes(to.path)) {
     return navigateTo('/')
   }
 })

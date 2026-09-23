@@ -1,44 +1,36 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-
-  // Modo SPA: toda la app corre en el cliente (necesario para Dexie/IndexedDB)
   ssr: false,
+  devtools: { enabled: false },
 
-  // Devtools activas solo en desarrollo
-  devtools: { enabled: true },
-
-  // Configuración del servidor para Codespaces
   devServer: {
     host: '0.0.0.0',
     port: 3000,
   },
 
-  // Metadatos del head
   app: {
     head: {
-      title: 'FinScope - Finanzas Personales',
+      title: 'FinScope · Finanzas Personales',
       htmlAttrs: { lang: 'es' },
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Gestiona tus finanzas personales de forma local y segura.' },
+        { name: 'description', content: 'Gestiona tus finanzas personales.' },
+        { name: 'theme-color', content: '#0a0a0a' },
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+        { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap',
+        },
       ],
     },
   },
 
-  // Vite: asegura que Dexie se cargue correctamente en cliente
   vite: {
-    optimizeDeps: {
-      include: ['dexie'],
-    },
-  },
-
-  // Evita problemas de resolución de rutas en Codespaces
-  nitro: {
-    preset: 'static',
+    optimizeDeps: { include: ['dexie'] },
   },
 })
