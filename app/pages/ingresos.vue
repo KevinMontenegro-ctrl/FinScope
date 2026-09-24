@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import {
-  gastos, categorias, money,
-  type Usuario, type Gasto, type Categoria,
+  ingresos, categorias, money,
+  type Usuario, type Ingreso, type Categoria,
 } from '~/database'
 
 const usuario = useState<Usuario | null>('usuario')
-const lista = ref<Gasto[]>([])
+const lista = ref<Ingreso[]>([])
 const cats = ref<Categoria[]>([])
 const form = reactive({ monto: 0, categoriaId: '', descripcion: '', fecha: '' })
 
-const totalMostrado = computed(() => lista.value.reduce((s, g) => s + g.monto, 0))
+const totalMostrado = computed(() => lista.value.reduce((s, i) => s + i.monto, 0))
 
 const cargar = async () => {
   if (!usuario.value) return
   const uid = usuario.value.id
-  lista.value = (await gastos.listar(uid)).sort((a, b) => b.fecha.localeCompare(a.fecha))
-  cats.value = await categorias.porTipo(uid, 'gasto')
+  lista.value = (await ingresos.listar(uid)).sort((a, b) => b.fecha.localeCompare(a.fecha))
+  cats.value = await categorias.porTipo(uid, 'ingreso')
 }
 
 const agregar = async () => {
   if (!usuario.value || !form.monto || !form.categoriaId) return
-  await gastos.crear({
+  await ingresos.crear({
     usuarioId: usuario.value.id,
     monto: Number(form.monto),
     categoriaId: form.categoriaId,
@@ -32,33 +32,31 @@ const agregar = async () => {
 }
 
 const eliminar = async (id: string) => {
-  await gastos.eliminar(id)
+  await ingresos.eliminar(id)
   await cargar()
 }
 
 const nombreCat = (id: string) => cats.value.find(c => c.id === id)?.nombre ?? '—'
-const colorCat = (id: string) => cats.value.find(c => c.id === id)?.color ?? '#94a3b8'
+const colorCat = (id: string) => cats.value.find(c => c.id === id)?.color ?? '#10b981'
 
 onMounted(cargar)
 </script>
 
 <template>
   <div class="page">
-    <!-- Encabezado -->
     <header class="page-head">
       <div>
-        <h1>Gastos</h1>
-        <p class="muted">Registra y controla todos tus gastos</p>
+        <h1>Ingresos</h1>
+        <p class="muted">Registra y controla todos tus ingresos</p>
       </div>
       <div class="head-stat">
         <span class="muted">Total</span>
-        <strong class="head-amount danger">{{ money(totalMostrado) }}</strong>
+        <strong class="head-amount success">{{ money(totalMostrado) }}</strong>
       </div>
     </header>
 
-    <!-- Formulario -->
     <section class="card form-card">
-      <h2>Nuevo gasto</h2>
+      <h2>Nuevo ingreso</h2>
       <form @submit.prevent="agregar">
         <input v-model.number="form.monto" type="number" step="0.01" placeholder="Monto" required />
         <select v-model="form.categoriaId" required>
@@ -67,34 +65,33 @@ onMounted(cargar)
         </select>
         <input v-model="form.descripcion" placeholder="Descripción (opcional)" />
         <input v-model="form.fecha" type="date" />
-        <button class="primary">Agregar gasto</button>
+        <button class="primary">Agregar ingreso</button>
       </form>
     </section>
 
-    <!-- Lista -->
     <section class="card list-card">
       <div class="section-head">
         <h2>Historial</h2>
         <span class="count">{{ lista.length }}</span>
       </div>
 
-      <p v-if="!lista.length" class="muted">Sin gastos registrados.</p>
+      <p v-if="!lista.length" class="muted">Sin ingresos registrados.</p>
 
       <ul v-else>
-        <li v-for="g in lista" :key="g.id" class="item">
+        <li v-for="i in lista" :key="i.id" class="item">
           <div class="item-info">
-            <div class="cat-dot" :style="{ background: colorCat(g.categoriaId) }"></div>
+            <div class="cat-dot" :style="{ background: colorCat(i.categoriaId) }"></div>
             <div>
               <div class="item-main">
-                <span class="item-amount danger">{{ money(g.monto) }}</span>
-                <span class="muted">— {{ g.descripcion || '(sin descripción)' }}</span>
+                <span class="item-amount success">{{ money(i.monto) }}</span>
+                <span class="muted">— {{ i.descripcion || '(sin descripción)' }}</span>
               </div>
               <div class="muted item-meta">
-                {{ nombreCat(g.categoriaId) }} · {{ g.fecha.slice(0, 10) }}
+                {{ nombreCat(i.categoriaId) }} · {{ i.fecha.slice(0, 10) }}
               </div>
             </div>
           </div>
-          <button @click="eliminar(g.id)">Eliminar</button>
+          <button @click="eliminar(i.id)">Eliminar</button>
         </li>
       </ul>
     </section>
@@ -126,11 +123,10 @@ onMounted(cargar)
   letter-spacing: -0.02em;
 }
 
-.head-amount.danger { color: var(--danger); }
+.head-amount.success { color: var(--accent-dark); }
 
 .form-card { padding: 1.25rem 1.35rem; }
 .form-card h2 { margin-bottom: 1rem; }
-
 .list-card { padding: 1.25rem 1.35rem; }
 
 .section-head {
@@ -161,14 +157,9 @@ onMounted(cargar)
   box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.04);
 }
 
-.item-main {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text);
-}
-
+.item-main { font-size: 0.9rem; font-weight: 500; color: var(--text); }
 .item-amount { font-family: 'Outfit', sans-serif; font-weight: 700; }
-.item-amount.danger { color: var(--danger); }
+.item-amount.success { color: var(--accent-dark); }
 
 .item-meta { margin-top: 0.15rem; font-size: 0.76rem; }
 </style>
