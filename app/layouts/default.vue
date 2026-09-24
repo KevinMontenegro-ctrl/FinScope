@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { auth, type Usuario } from '~/database'
+import { auth, ajustes, setMoneda, type Usuario } from '~/database'
 
 const usuario = useState<Usuario | null>('usuario', () => null)
 const route = useRoute()
@@ -8,6 +8,7 @@ const sidebarAbierto = ref(false)
 const salir = async () => {
   await auth.cerrarSesion()
   usuario.value = null
+  document.documentElement.classList.remove('dark')
   await navigateTo('/login')
 }
 
@@ -24,6 +25,34 @@ const navLinks = [
 
 const inicial = computed(() => usuario.value?.nombre?.charAt(0).toUpperCase() ?? '?')
 
+// 👇 Aplica el tema al <html>
+const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
+  const html = document.documentElement
+  if (tema === 'oscuro') {
+    html.classList.add('dark')
+  } else if (tema === 'claro') {
+    html.classList.remove('dark')
+  } else {
+    // sistema
+    const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    html.classList.toggle('dark', preferDark)
+  }
+}
+
+// 👇 Carga el usuario, aplica moneda y tema
+const cargarUsuario = async () => {
+  const u = await auth.usuarioActual()
+  usuario.value = u
+  if (u) {
+    const config = await ajustes.obtener(u.id)
+    if (config) {
+      setMoneda(config.moneda, config.locale)
+      aplicarTema(config.tema)
+    }
+  }
+}
+
+onMounted(cargarUsuario)
 watch(() => route.path, () => (sidebarAbierto.value = false))
 </script>
 

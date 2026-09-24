@@ -433,3 +433,59 @@ li.item button:hover {
   h1 { font-size: 1.35rem; }
   .stat { font-size: 1.3rem; }
 }
+
+
+
+/* =====================================================
+   TEMA OSCURO
+   ===================================================== */
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  /* Fondos */
+  --bg: #0a0f1a;
+  --bg-soft: #131c2e;
+  --surface: #151d2e;
+  --surface-hover: #1e293b;
+  --surface-soft: #131c2e;
+
+  /* Bordes */
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.16);
+
+  /* Texto */
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --text-faint: #475569;
+
+  /* Acento verde sigue igual */
+  --accent-soft: rgba(16, 185, 129, 0.15);
+
+  /* Estados */
+  --success-soft: rgba(16, 185, 129, 0.15);
+  --danger-soft: rgba(239, 68, 68, 0.15);
+  --warning-soft: rgba(245, 158, 11, 0.15);
+  --info-soft: rgba(59, 130, 246, 0.15);
+
+  /* Sombras más sutiles en oscuro */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Ajuste de blobs en modo oscuro (más tenues) */
+:root.dark body::before {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+}
+:root.dark body::after {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
+}

@@ -80,9 +80,56 @@ export const uid = () =>
 
 export const now = () => new Date().toISOString()
 
-export const money = (n: number, locale = 'es-ES', cur = 'EUR') =>
-  new Intl.NumberFormat(locale, { style: 'currency', currency: cur }).format(n || 0)
+// ============ MONEDA GLOBAL ============
+// Variable module-level: money() la lee, setMoneda() la actualiza.
+let _monedaActual = 'COP'
+let _localeActual = 'es-CO'
 
+/** Actualiza la moneda activa globalmente */
+export const setMoneda = (moneda: string, locale: string) => {
+  _monedaActual = moneda || 'COP'
+  _localeActual = locale || 'es-CO'
+}
+
+/** Devuelve la moneda activa */
+export const getMoneda = () => ({
+  moneda: _monedaActual,
+  locale: _localeActual,
+})
+
+// Monedas sin decimales (para formatear sin ,00 al final)
+const SIN_DECIMALES = new Set(['COP', 'CLP', 'PYG', 'VND', 'JPY', 'KRW', 'IDR'])
+
+/**
+ * Formatea un número como moneda.
+ * Si no se pasan argumentos, usa la moneda activa del usuario.
+ */
+export const money = (n: number, locale?: string, cur?: string) => {
+  const l = locale ?? _localeActual
+  const c = cur ?? _monedaActual
+  const sinDec = SIN_DECIMALES.has(c)
+  return new Intl.NumberFormat(l, {
+    style: 'currency',
+    currency: c,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: sinDec ? 0 : 2,
+  }).format(n || 0)
+}
+
+// Mapa de moneda → locale sugerido
+export const MONEDAS_DISPONIBLES: { code: string; nombre: string; locale: string; simbolo: string }[] = [
+  { code: 'COP', nombre: 'Peso colombiano',   locale: 'es-CO', simbolo: '$' },
+  { code: 'USD', nombre: 'Dólar estadounidense', locale: 'en-US', simbolo: '$' },
+  { code: 'EUR', nombre: 'Euro',               locale: 'es-ES', simbolo: '€' },
+  { code: 'MXN', nombre: 'Peso mexicano',      locale: 'es-MX', simbolo: '$' },
+  { code: 'ARS', nombre: 'Peso argentino',     locale: 'es-AR', simbolo: '$' },
+  { code: 'CLP', nombre: 'Peso chileno',       locale: 'es-CL', simbolo: '$' },
+  { code: 'PEN', nombre: 'Sol peruano',        locale: 'es-PE', simbolo: 'S/' },
+  { code: 'BRL', nombre: 'Real brasileño',     locale: 'pt-BR', simbolo: 'R$' },
+  { code: 'GBP', nombre: 'Libra esterlina',    locale: 'en-GB', simbolo: '£' },
+]
+
+// ============ HASH ============
 export async function hashPassword(password: string, salt?: string) {
   const s = salt ?? uid()
   const enc = new TextEncoder()
