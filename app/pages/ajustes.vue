@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  ajustes, db, auth, setMoneda, MONEDAS_DISPONIBLES,
+  ajustes, auth, setMoneda, MONEDAS_DISPONIBLES,
   type Usuario, type Ajustes,
 } from '~/database'
 
@@ -9,12 +9,18 @@ const config = ref<Ajustes | null>(null)
 const msg = ref('')
 const modalBorrarAbierto = ref(false)
 
+const callDb = <T = any>(action: string, payload: any = {}) =>
+  $fetch<T>('/api/db', {
+    method: 'POST',
+    credentials: 'include',
+    body: { action, ...payload },
+  })
+
 const cargar = async () => {
   if (!usuario.value) return
   config.value = (await ajustes.obtener(usuario.value.id)) ?? null
 }
 
-// Aplica el tema al <html> al instante
 const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
   const html = document.documentElement
   if (tema === 'oscuro') {
@@ -27,7 +33,6 @@ const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
   }
 }
 
-// Auto-actualiza el locale al cambiar de moneda
 const onCambioMoneda = () => {
   if (!config.value) return
   const encontrada = MONEDAS_DISPONIBLES.find(m => m.code === config.value!.moneda)
@@ -53,23 +58,19 @@ const guardar = async () => {
 
 const exportar = async () => {
   if (!usuario.value) return
-  const uid = usuario.value.id
-  const data = {
-    gastos: await db.gastos.where('usuarioId').equals(uid).toArray(),
-    ingresos: await db.ingresos.where('usuarioId').equals(uid).toArray(),
-    metas: await db.metas.where('usuarioId').equals(uid).toArray(),
-    presupuestos: await db.presupuestos.where('usuarioId').equals(uid).toArray(),
-    categorias: await db.categorias.where('usuarioId').equals(uid).toArray(),
-    exportadoEn: new Date().toISOString(),
+  try {
+    const data = await callDb<any>('export-all')
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `finscope-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    mostrar('Datos exportados')
+  } catch {
+    mostrar('Error al exportar')
   }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `finscope-${Date.now()}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-  mostrar('Datos exportados')
 }
 
 const importar = async (e: Event) => {
@@ -79,15 +80,8 @@ const importar = async (e: Event) => {
   if (!file) return
 
   try {
-    const data = JSON.parse(await file.text())
-    const uid = usuario.value.id
-    for (const tabla of ['gastos', 'ingresos', 'metas', 'presupuestos', 'categorias'] as const) {
-      if (Array.isArray(data[tabla])) {
-        await (db[tabla] as any).bulkPut(
-          data[tabla].map((x: Record<string, unknown>) => ({ ...x, usuarioId: uid })),
-        )
-      }
-    }
+    const datos = JSON.parse(await file.text())
+    await callDb('import-all', { datos })
     mostrar('Datos importados')
   } catch {
     mostrar('Error al importar JSON')
@@ -95,24 +89,18 @@ const importar = async (e: Event) => {
   input.value = ''
 }
 
-// 👇 Abre el modal (ya no usa confirm)
-const abrirModalBorrar = () => {
-  modalBorrarAbierto.value = true
-}
-
-const cancelarBorrar = () => {
-  modalBorrarAbierto.value = false
-}
+const abrirModalBorrar = () => { modalBorrarAbierto.value = true }
+const cancelarBorrar = () => { modalBorrarAbierto.value = false }
 
 const confirmarBorrar = async () => {
   if (!usuario.value) return
-  const uid = usuario.value.id
-  for (const tabla of ['gastos', 'ingresos', 'metas', 'presupuestos'] as const) {
-    const items = await (db[tabla] as any).where('usuarioId').equals(uid).toArray()
-    for (const it of items) await (db[tabla] as any).delete(it.id)
+  try {
+    await callDb('delete-all')
+    modalBorrarAbierto.value = false
+    mostrar('Datos eliminados')
+  } catch {
+    mostrar('Error al eliminar')
   }
-  modalBorrarAbierto.value = false
-  mostrar('Datos eliminados')
 }
 
 const cerrarSesion = async () => {
@@ -151,31 +139,21 @@ onMounted(cargar)
       </div>
     </header>
 
-    <!-- Preferencias -->
     <section v-if="config" class="card">
       <h2>Preferencias</h2>
       <div class="prefs-grid">
         <label>
           Moneda
           <select v-model="config.moneda" @change="onCambioMoneda">
-            <option
-              v-for="m in MONEDAS_DISPONIBLES"
-              :key="m.code"
-              :value="m.code"
-            >
+            <option v-for="m in MONEDAS_DISPONIBLES" :key="m.code" :value="m.code">
               {{ m.code }} — {{ m.nombre }} ({{ m.simbolo }})
             </option>
           </select>
         </label>
 
-        <!-- Locale ahora es solo lectura, se auto-actualiza -->
         <label>
           Locale (formato regional)
-          <input
-            :value="config.locale"
-            disabled
-            class="input-disabled"
-          />
+          <input :value="config.locale" disabled class="input-disabled" />
         </label>
 
         <label>
@@ -198,7 +176,6 @@ onMounted(cargar)
       </button>
     </section>
 
-    <!-- Cuenta -->
     <section class="card cuenta-card">
       <div class="cuenta-info">
         <div class="avatar-lg">{{ usuario?.nombre?.charAt(0).toUpperCase() }}</div>
@@ -210,7 +187,6 @@ onMounted(cargar)
       <button class="btn-danger" @click="cerrarSesion">Cerrar sesión</button>
     </section>
 
-    <!-- Datos -->
     <section class="card">
       <h2>Datos</h2>
       <p class="muted">Exporta o importa toda tu información en formato JSON.</p>
@@ -224,7 +200,6 @@ onMounted(cargar)
       </div>
     </section>
 
-    <!-- Modal de confirmación -->
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="modalBorrarAbierto" class="modal-backdrop" @click.self="cancelarBorrar">
@@ -236,12 +211,8 @@ onMounted(cargar)
               y presupuestos. Esta acción no se puede deshacer.
             </p>
             <div class="modal-actions">
-              <button class="modal-btn modal-cancel" @click="cancelarBorrar">
-                Cancelar
-              </button>
-              <button class="modal-btn modal-confirm" @click="confirmarBorrar">
-                Sí, borrar todo
-              </button>
+              <button class="modal-btn modal-cancel" @click="cancelarBorrar">Cancelar</button>
+              <button class="modal-btn modal-confirm" @click="confirmarBorrar">Sí, borrar todo</button>
             </div>
           </div>
         </div>
@@ -264,7 +235,6 @@ onMounted(cargar)
   max-width: 440px;
 }
 
-/* Input disabled */
 .input-disabled {
   background: var(--bg-soft) !important;
   color: var(--text-dim) !important;
@@ -312,7 +282,7 @@ onMounted(cargar)
   font-size: 1.1rem;
   color: #fff;
   background: linear-gradient(135deg, #10b981, #34d399);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 6px 16px rgba(16,185,129,0.35);
 }
 
 .cuenta-nombre {
@@ -348,11 +318,10 @@ onMounted(cargar)
   background: var(--bg-soft);
 }
 
-/* ============ MODAL ============ */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(15,23,42,0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: grid;
@@ -398,11 +367,7 @@ onMounted(cargar)
   line-height: 1.55;
   margin: 0 0 1.5rem;
 }
-
-.modal-text strong {
-  color: var(--text);
-  font-weight: 600;
-}
+.modal-text strong { color: var(--text); font-weight: 600; }
 
 .modal-actions {
   display: grid;
@@ -439,22 +404,17 @@ onMounted(cargar)
 }
 .modal-confirm:hover {
   background: #dc2626;
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 6px 16px rgba(239,68,68,0.35);
 }
 
-/* Animaciones del modal */
 .modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s;
-}
+.modal-leave-active { transition: opacity 0.2s; }
 .modal-enter-active .modal,
 .modal-leave-active .modal {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
 }
 .modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
+.modal-leave-to { opacity: 0; }
 .modal-enter-from .modal,
 .modal-leave-to .modal {
   opacity: 0;

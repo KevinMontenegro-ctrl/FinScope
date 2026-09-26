@@ -8,7 +8,6 @@ export default defineNuxtConfig({
     port: 3000,
   },
 
-  // 👇 Carga del CSS global (método oficial)
   css: ['~/assets/css/main.css'],
 
   app: {
@@ -18,7 +17,6 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Gestiona tus finanzas personales.' },
         { name: 'theme-color', content: '#fafafa' },
       ],
       link: [
@@ -31,9 +29,5 @@ export default defineNuxtConfig({
         },
       ],
     },
-  },
-
-  vite: {
-    optimizeDeps: { include: ['dexie'] },
   },
 })
