@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { auth, ajustes, setMoneda, type Usuario } from '~/database'
+import { ajustes, setMoneda, type Usuario } from '~/database'
 
-const usuario = useState<Usuario | null>('usuario', () => null)
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 const route = useRoute()
 const sidebarAbierto = ref(false)
+const usuario = ref<Usuario | null>(null)
 
 const salir = async () => {
-  await auth.cerrarSesion()
+  await supabase.auth.signOut()
   usuario.value = null
   document.documentElement.classList.remove('dark')
   await navigateTo('/login')
@@ -25,7 +27,6 @@ const navLinks = [
 
 const inicial = computed(() => usuario.value?.nombre?.charAt(0).toUpperCase() ?? '?')
 
-// 👇 Aplica el tema al <html>
 const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
   const html = document.documentElement
   if (tema === 'oscuro') {
@@ -33,26 +34,29 @@ const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
   } else if (tema === 'claro') {
     html.classList.remove('dark')
   } else {
-    // sistema
     const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     html.classList.toggle('dark', preferDark)
   }
 }
 
-// 👇 Carga el usuario, aplica moneda y tema
+// Cargar usuario y ajustes al montar
 const cargarUsuario = async () => {
-  const u = await auth.usuarioActual()
-  usuario.value = u
-  if (u) {
-    const config = await ajustes.obtener(u.id)
-    if (config) {
-      setMoneda(config.moneda, config.locale)
-      aplicarTema(config.tema)
-    }
+  const u = user.value
+  if (!u) return
+  usuario.value = {
+    id: u.id,
+    email: u.email ?? '',
+    nombre: u.user_metadata?.nombre ?? 'Usuario',
+  }
+  const config = await ajustes.obtener(u.id)
+  if (config) {
+    setMoneda(config.moneda, config.locale)
+    aplicarTema(config.tema)
   }
 }
 
 onMounted(cargarUsuario)
+watch(user, cargarUsuario)
 watch(() => route.path, () => (sidebarAbierto.value = false))
 </script>
 

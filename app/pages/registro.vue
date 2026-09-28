@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { auth, type Usuario } from '~/database'
-
 definePageMeta({ layout: false })
 
-const usuario = useState<Usuario | null>('usuario')
+const supabase = useSupabaseClient()
 const nombre = ref('')
 const email = ref('')
 const password = ref('')
@@ -30,8 +28,12 @@ const registrar = async () => {
 
   cargando.value = true
   try {
-    const u = await auth.registrar(email.value, nombre.value, password.value)
-    usuario.value = u
+    const { error: err } = await supabase.auth.signUp({
+      email: email.value,
+      password: password.value,
+      options: { data: { nombre: nombre.value } },
+    })
+    if (err) throw new Error(err.message)
     await navigateTo('/')
   } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : 'Error al registrar'
@@ -48,9 +50,7 @@ const registrar = async () => {
     <div class="blob blob-3"></div>
 
     <form class="auth-card wide" @submit.prevent="registrar">
-      <div class="auth-logo">
-        <span class="auth-logo-icon">💰</span>
-      </div>
+      <div class="auth-logo"><span class="auth-logo-icon">💰</span></div>
 
       <h1 class="auth-title">Crear cuenta</h1>
       <p class="auth-subtitle">Empieza a gestionar tus finanzas</p>
@@ -117,7 +117,7 @@ const registrar = async () => {
 </template>
 
 <style scoped>
-/* Reutiliza el mismo bloque visual que login.vue */
+/* Mismos estilos que login.vue + .auth-card.wide */
 .auth-page {
   min-height: 100vh;
   display: grid;
@@ -127,39 +127,14 @@ const registrar = async () => {
   position: relative;
   overflow: hidden;
 }
-
-.blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  pointer-events: none;
-  z-index: 0;
-}
-.blob-1 {
-  width: 500px; height: 500px;
-  background: rgba(16, 185, 129, 0.25);
-  top: -180px; left: -180px;
-  animation: flotar 16s ease-in-out infinite;
-}
-.blob-2 {
-  width: 460px; height: 460px;
-  background: rgba(59, 130, 246, 0.18);
-  bottom: -160px; right: -160px;
-  animation: flotar 20s ease-in-out infinite reverse;
-}
-.blob-3 {
-  width: 320px; height: 320px;
-  background: rgba(52, 211, 153, 0.15);
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  animation: flotar 24s ease-in-out infinite;
-}
-
+.blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0; }
+.blob-1 { width: 500px; height: 500px; background: rgba(16,185,129,0.25); top: -180px; left: -180px; animation: flotar 16s ease-in-out infinite; }
+.blob-2 { width: 460px; height: 460px; background: rgba(59,130,246,0.18); bottom: -160px; right: -160px; animation: flotar 20s ease-in-out infinite reverse; }
+.blob-3 { width: 320px; height: 320px; background: rgba(52,211,153,0.15); top: 50%; left: 50%; transform: translate(-50%,-50%); animation: flotar 24s ease-in-out infinite; }
 @keyframes flotar {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(30px, -25px) scale(1.08); }
 }
-
 .auth-card {
   position: relative;
   z-index: 1;
@@ -167,27 +142,25 @@ const registrar = async () => {
   max-width: 420px;
   padding: 2.5rem 2rem 2rem;
   border-radius: var(--radius-xl);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: saturate(180%) blur(24px);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  outline: 1px solid rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(255,255,255,0.9);
+  outline: 1px solid rgba(15,23,42,0.05);
   outline-offset: -1px;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
   max-height: 95vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-xl), 0 0 60px rgba(16, 185, 129, 0.08);
+  box-shadow: var(--shadow-xl), 0 0 60px rgba(16,185,129,0.08);
   animation: auth-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .auth-card.wide { max-width: 420px; }
-
 @keyframes auth-in {
   from { opacity: 0; transform: translateY(14px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 .auth-logo { display: flex; justify-content: center; margin-bottom: 0.25rem; }
 .auth-logo-icon {
   width: 60px; height: 60px;
@@ -195,9 +168,8 @@ const registrar = async () => {
   font-size: 1.6rem;
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, #10b981, #34d399);
-  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 10px 24px rgba(16,185,129,0.4);
 }
-
 .auth-title {
   margin: 0;
   text-align: center;
@@ -207,13 +179,7 @@ const registrar = async () => {
   color: var(--text);
   letter-spacing: -0.03em;
 }
-.auth-subtitle {
-  margin: -0.5rem 0 0.4rem;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
+.auth-subtitle { margin: -0.5rem 0 0.4rem; text-align: center; font-size: 0.85rem; color: var(--text-muted); }
 .auth-field { display: flex; flex-direction: column; gap: 0.4rem; }
 .auth-field label { font-size: 0.78rem; font-weight: 500; color: var(--text-muted); }
 .auth-field input {
@@ -221,7 +187,7 @@ const registrar = async () => {
   padding: 0.75rem 0.95rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255,255,255,0.75);
   color: var(--text);
   font-size: 0.9rem;
   font-family: 'Inter', sans-serif;
@@ -230,12 +196,7 @@ const registrar = async () => {
 }
 .auth-field input::placeholder { color: var(--text-dim); }
 .auth-field input:hover { border-color: var(--border-hover); }
-.auth-field input:focus {
-  border-color: var(--accent);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px var(--accent-glow);
-}
-
+.auth-field input:focus { border-color: var(--accent); background: #ffffff; box-shadow: 0 0 0 4px var(--accent-glow); }
 .auth-input-wrap { position: relative; }
 .auth-input-wrap input { padding-right: 2.8rem; }
 .auth-toggle-pass {
@@ -253,21 +214,18 @@ const registrar = async () => {
   transition: opacity 0.15s, background 0.15s;
 }
 .auth-toggle-pass:hover { opacity: 1; background: var(--bg-soft); }
-
 .auth-error {
   margin: 0;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
   background: var(--danger-soft);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239,68,68,0.2);
   color: var(--danger);
   font-size: 0.82rem;
   text-align: center;
 }
-
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }
-
 .auth-btn {
   margin-top: 0.5rem;
   padding: 0.8rem 1rem;
@@ -283,30 +241,20 @@ const registrar = async () => {
   display: grid;
   place-items: center;
   min-height: 46px;
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 8px 20px rgba(16,185,129,0.35);
 }
-.auth-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(16, 185, 129, 0.45);
-}
+.auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(16,185,129,0.45); }
 .auth-btn:active:not(:disabled) { transform: translateY(0); }
 .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-
 .auth-spinner {
   width: 18px; height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  border: 2px solid rgba(255,255,255,0.35);
   border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-.auth-footer {
-  margin: 0.4rem 0 0;
-  text-align: center;
-  font-size: 0.83rem;
-  color: var(--text-muted);
-}
+.auth-footer { margin: 0.4rem 0 0; text-align: center; font-size: 0.83rem; color: var(--text-muted); }
 .auth-link {
   color: var(--accent-dark);
   font-weight: 600;

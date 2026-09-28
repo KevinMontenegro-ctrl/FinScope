@@ -8,8 +8,23 @@ export default defineNuxtConfig({
     port: 3000,
   },
 
+  // ============ MÓDULO SUPABASE ============
+  modules: ['@nuxtjs/supabase'],
+
+  supabase: {
+    // Lee SUPABASE_URL y SUPABASE_KEY del .env automáticamente
+    redirect: true,
+    redirectOptions: {
+      login: '/login',
+      callback: '/confirm',
+      exclude: ['/registro'],
+    },
+  },
+
+  // ============ CSS GLOBAL ============
   css: ['~/assets/css/main.css'],
 
+  // ============ HEAD ============
   app: {
     head: {
       title: 'FinScope · Finanzas Personales',
@@ -17,6 +32,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'Gestiona tus finanzas personales.' },
         { name: 'theme-color', content: '#fafafa' },
       ],
       link: [

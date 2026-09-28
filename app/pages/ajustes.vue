@@ -9,12 +9,7 @@ const config = ref<Ajustes | null>(null)
 const msg = ref('')
 const modalBorrarAbierto = ref(false)
 
-const callDb = <T = any>(action: string, payload: any = {}) =>
-  $fetch<T>('/api/db', {
-    method: 'POST',
-    credentials: 'include',
-    body: { action, ...payload },
-  })
+const supabase = useSupabaseClient()
 
 const cargar = async () => {
   if (!usuario.value) return
@@ -23,11 +18,9 @@ const cargar = async () => {
 
 const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
   const html = document.documentElement
-  if (tema === 'oscuro') {
-    html.classList.add('dark')
-  } else if (tema === 'claro') {
-    html.classList.remove('dark')
-  } else {
+  if (tema === 'oscuro') html.classList.add('dark')
+  else if (tema === 'claro') html.classList.remove('dark')
+  else {
     const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     html.classList.toggle('dark', preferDark)
   }
@@ -59,7 +52,25 @@ const guardar = async () => {
 const exportar = async () => {
   if (!usuario.value) return
   try {
-    const data = await callDb<any>('export-all')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const [gastos, ingresos, metas, presupuestos, categorias] = await Promise.all([
+      supabase.from('gastos').select('*').eq('usuario_id', user.id),
+      supabase.from('ingresos').select('*').eq('usuario_id', user.id),
+      supabase.from('metas').select('*').eq('usuario_id', user.id),
+      supabase.from('presupuestos').select('*').eq('usuario_id', user.id),
+      supabase.from('categorias').select('*').eq('usuario_id', user.id),
+    ])
+
+    const data = {
+      gastos: gastos.data ?? [],
+      ingresos: ingresos.data ?? [],
+      metas: metas.data ?? [],
+      presupuestos: presupuestos.data ?? [],
+      categorias: categorias.data ?? [],
+      exportadoEn: new Date().toISOString(),
+    }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -81,9 +92,34 @@ const importar = async (e: Event) => {
 
   try {
     const datos = JSON.parse(await file.text())
-    await callDb('import-all', { datos })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // Mapeo de tablas y campos a importar
+    const tablas = ['categorias', 'gastos', 'ingresos', 'metas', 'presupuestos'] as const
+    const camposPorTabla: Record<string, string[]> = {
+      categorias: ['nombre', 'tipo', 'color'],
+      gastos: ['monto', 'categoria_id', 'descripcion', 'fecha'],
+      ingresos: ['monto', 'categoria_id', 'descripcion', 'fecha'],
+      metas: ['nombre', 'monto_objetivo', 'monto_actual', 'fecha_limite', 'completada'],
+      presupuestos: ['categoria_id', 'monto_limite', 'anio', 'mes'],
+    }
+
+    for (const tabla of tablas) {
+      if (!Array.isArray(datos[tabla]) || !datos[tabla].length) continue
+      const campos = camposPorTabla[tabla]
+      const filas = datos[tabla].map((item: any) => {
+        const obj: any = { usuario_id: user.id }
+        for (const c of campos) obj[c] = item[c] ?? null
+        return obj
+      })
+      const { error } = await supabase.from(tabla).insert(filas)
+      if (error) throw error
+    }
+
     mostrar('Datos importados')
-  } catch {
+  } catch (e) {
+    console.error(e)
     mostrar('Error al importar JSON')
   }
   input.value = ''
@@ -95,7 +131,15 @@ const cancelarBorrar = () => { modalBorrarAbierto.value = false }
 const confirmarBorrar = async () => {
   if (!usuario.value) return
   try {
-    await callDb('delete-all')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await Promise.all([
+      supabase.from('gastos').delete().eq('usuario_id', user.id),
+      supabase.from('ingresos').delete().eq('usuario_id', user.id),
+      supabase.from('metas').delete().eq('usuario_id', user.id),
+      supabase.from('presupuestos').delete().eq('usuario_id', user.id),
+    ])
     modalBorrarAbierto.value = false
     mostrar('Datos eliminados')
   } catch {
