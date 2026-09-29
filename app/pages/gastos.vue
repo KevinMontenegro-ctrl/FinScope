@@ -18,6 +18,8 @@ const cargar = async () => {
   cats.value = await categorias.porTipo(uid, 'gasto')
 }
 
+const hoy = computed(() => new Date().toISOString().split('T')[0])
+
 const agregar = async () => {
   if (!usuario.value || !form.monto || !form.categoriaId) return
   await gastos.crear({
