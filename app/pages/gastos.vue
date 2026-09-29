@@ -56,20 +56,24 @@ onMounted(cargar)
       </div>
     </header>
 
-    <!-- Formulario -->
-    <section class="card form-card">
-      <h2>Nuevo gasto</h2>
-      <form @submit.prevent="agregar">
-        <input v-model.number="form.monto" type="number" step="0.01" placeholder="Monto" required />
-        <select v-model="form.categoriaId" required>
-          <option value="">Selecciona una categoría…</option>
-          <option v-for="c in cats" :key="c.id" :value="c.id">{{ c.nombre }}</option>
-        </select>
-        <input v-model="form.descripcion" placeholder="Descripción (opcional)" />
-        <input v-model="form.fecha" type="date" />
-        <button class="primary">Agregar gasto</button>
-      </form>
-    </section>
+    <!-- Formulario con limitaciones -->
+<section class="card form-card">
+  <h2>Nuevo gasto</h2>
+  <form @submit.prevent="agregar">
+    <!-- min="0.01" evita montos en cero o negativos -->
+    <input v-model.number="form.monto" type="number" step="0.01" min="0.01" placeholder="Monto" required />
+    <select v-model="form.categoriaId" required>
+      <option value="">Selecciona una categoría…</option>
+      <option v-for="c in cats" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+    </select>
+    <!-- maxlength="100" limita la longitud del texto -->
+    <input v-model="form.descripcion" placeholder="Descripción (opcional)" maxlength="100" />
+    <!-- :max="hoy" evita que seleccionen fechas futuras -->
+    <input v-model="form.fecha" type="date" :max="hoy" />
+    
+    <button class="primary">Agregar gasto</button>
+  </form>
+</section>
 
     <!-- Lista -->
     <section class="card list-card">
