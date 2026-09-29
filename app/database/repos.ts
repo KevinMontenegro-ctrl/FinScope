@@ -207,13 +207,13 @@ export const ingresos = {
 
   porMes: async (_uid: string, anio: number, mes: number): Promise<Ingreso[]> => {
     const supabase = useSupabaseClient()
-    const inicio = new Date(anio, mes - 1, 1).toISOString()
-    const fin = new Date(anio, mes, 0, 23, 59, 59).toISOString()
+    const inicio = `${anio}-${String(mes).padStart(2, '0')}-01`
+    const fin = new Date(Date.UTC(anio, mes, 1)).toISOString().slice(0, 10)
     const { data, error } = await supabase
       .from('ingresos')
       .select('*')
       .gte('fecha', inicio)
-      .lte('fecha', fin)
+      .lt('fecha', fin)
       .order('fecha', { ascending: false })
     if (error) throw new Error(error.message)
     return (data ?? []).map(cIngreso)
