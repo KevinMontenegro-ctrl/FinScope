@@ -63,7 +63,7 @@ onMounted(cargar)
   <h2>Nuevo gasto</h2>
   <form @submit.prevent="agregar">
     <!-- min="0.01" evita montos en cero o negativos -->
-    <input v-model.number="form.monto" type="number" step="0.01" min="0.01" placeholder="Monto" required />
+    <input v-model.number="form.monto" type="number" step="0.01" min="0.01" max="999999999" placeholder="Monto" required />
     <select v-model="form.categoriaId" required>
       <option value="">Selecciona una categoría…</option>
       <option v-for="c in cats" :key="c.id" :value="c.id">{{ c.nombre }}</option>
