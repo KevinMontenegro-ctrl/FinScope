@@ -60,7 +60,8 @@ export interface Ajustes {
   usuario_id?: string
   moneda: string
   locale: string
-  tema: 'claro' | 'oscuro' | 'sistema'
+  // 👇 Solo dos temas
+  tema: 'claro' | 'oscuro'
 }
 
 // ============ MONEDA GLOBAL ============
@@ -91,21 +92,22 @@ export const money = (n: number, locale?: string, cur?: string) => {
   }).format(n || 0)
 }
 
+// ============ MONEDAS DISPONIBLES ============
 export const MONEDAS_DISPONIBLES: {
   code: string
   nombre: string
   locale: string
   simbolo: string
 }[] = [
-  { code: 'COP', nombre: 'Peso colombiano', locale: 'es-CO', simbolo: '$' },
-  { code: 'USD', nombre: 'Dólar estadounidense', locale: 'en-US', simbolo: '$' },
-  { code: 'EUR', nombre: 'Euro', locale: 'es-ES', simbolo: '€' },
-  { code: 'MXN', nombre: 'Peso mexicano', locale: 'es-MX', simbolo: '$' },
-  { code: 'ARS', nombre: 'Peso argentino', locale: 'es-AR', simbolo: '$' },
-  { code: 'CLP', nombre: 'Peso chileno', locale: 'es-CL', simbolo: '$' },
-  { code: 'PEN', nombre: 'Sol peruano', locale: 'es-PE', simbolo: 'S/' },
-  { code: 'BRL', nombre: 'Real brasileño', locale: 'pt-BR', simbolo: 'R$' },
-  { code: 'GBP', nombre: 'Libra esterlina', locale: 'en-GB', simbolo: '£' },
+  { code: 'COP', nombre: 'Peso colombiano',       locale: 'es-CO', simbolo: '$' },
+  { code: 'USD', nombre: 'Dólar estadounidense',  locale: 'en-US', simbolo: '$' },
+  { code: 'EUR', nombre: 'Euro',                  locale: 'es-ES', simbolo: '€' },
+  { code: 'MXN', nombre: 'Peso mexicano',         locale: 'es-MX', simbolo: '$' },
+  { code: 'ARS', nombre: 'Peso argentino',        locale: 'es-AR', simbolo: '$' },
+  { code: 'CLP', nombre: 'Peso chileno',          locale: 'es-CL', simbolo: '$' },
+  { code: 'PEN', nombre: 'Sol peruano',           locale: 'es-PE', simbolo: 'S/' },
+  { code: 'BRL', nombre: 'Real brasileño',        locale: 'pt-BR', simbolo: 'R$' },
+  { code: 'GBP', nombre: 'Libra esterlina',       locale: 'en-GB', simbolo: '£' },
 ]
 
 export const uid = () =>

@@ -14,15 +14,21 @@ const supabase = useSupabaseClient()
 const cargar = async () => {
   if (!usuario.value) return
   config.value = (await ajustes.obtener(usuario.value.id)) ?? null
+  if (config.value) {
+    setMoneda(config.value.moneda, config.value.locale)
+    // Si el tema guardado no es válido (ej: 'sistema' de antes), lo forzamos a 'claro'
+    if (config.value.tema !== 'oscuro' && config.value.tema !== 'claro') {
+      config.value.tema = 'claro'
+    }
+  }
 }
 
-const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
+const aplicarTema = (tema: string) => {
   const html = document.documentElement
-  if (tema === 'oscuro') html.classList.add('dark')
-  else if (tema === 'claro') html.classList.remove('dark')
-  else {
-    const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    html.classList.toggle('dark', preferDark)
+  if (tema === 'oscuro') {
+    html.classList.add('dark')
+  } else {
+    html.classList.remove('dark')
   }
 }
 
@@ -39,14 +45,19 @@ const onCambioTema = () => {
 
 const guardar = async () => {
   if (!config.value) return
-  await ajustes.actualizar(config.value.id, {
-    moneda: config.value.moneda,
-    locale: config.value.locale,
-    tema: config.value.tema,
-  })
-  setMoneda(config.value.moneda, config.value.locale)
-  aplicarTema(config.value.tema)
-  mostrar('Ajustes guardados')
+  try {
+    await ajustes.actualizar(config.value.id, {
+      moneda: config.value.moneda,
+      locale: config.value.locale,
+      tema: config.value.tema,
+    })
+    setMoneda(config.value.moneda, config.value.locale)
+    aplicarTema(config.value.tema)
+    mostrar('Ajustes guardados')
+  } catch (e) {
+    console.error(e)
+    mostrar('Error al guardar')
+  }
 }
 
 const exportar = async () => {
@@ -55,7 +66,7 @@ const exportar = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [gastos, ingresos, metas, presupuestos, categorias] = await Promise.all([
+    const [gastosR, ingresosR, metasR, presupuestosR, categoriasR] = await Promise.all([
       supabase.from('gastos').select('*').eq('usuario_id', user.id),
       supabase.from('ingresos').select('*').eq('usuario_id', user.id),
       supabase.from('metas').select('*').eq('usuario_id', user.id),
@@ -64,13 +75,14 @@ const exportar = async () => {
     ])
 
     const data = {
-      gastos: gastos.data ?? [],
-      ingresos: ingresos.data ?? [],
-      metas: metas.data ?? [],
-      presupuestos: presupuestos.data ?? [],
-      categorias: categorias.data ?? [],
+      gastos: gastosR.data ?? [],
+      ingresos: ingresosR.data ?? [],
+      metas: metasR.data ?? [],
+      presupuestos: presupuestosR.data ?? [],
+      categorias: categoriasR.data ?? [],
       exportadoEn: new Date().toISOString(),
     }
+
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -79,7 +91,8 @@ const exportar = async () => {
     a.click()
     URL.revokeObjectURL(url)
     mostrar('Datos exportados')
-  } catch {
+  } catch (e) {
+    console.error(e)
     mostrar('Error al exportar')
   }
 }
@@ -95,9 +108,10 @@ const importar = async (e: Event) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Mapeo de tablas y campos a importar
     const tablas = ['categorias', 'gastos', 'ingresos', 'metas', 'presupuestos'] as const
-    const camposPorTabla: Record<string, string[]> = {
+    type NombreTabla = typeof tablas[number]
+
+    const camposPorTabla: Record<NombreTabla, string[]> = {
       categorias: ['nombre', 'tipo', 'color'],
       gastos: ['monto', 'categoria_id', 'descripcion', 'fecha'],
       ingresos: ['monto', 'categoria_id', 'descripcion', 'fecha'],
@@ -107,12 +121,14 @@ const importar = async (e: Event) => {
 
     for (const tabla of tablas) {
       if (!Array.isArray(datos[tabla]) || !datos[tabla].length) continue
+
       const campos = camposPorTabla[tabla]
       const filas = datos[tabla].map((item: any) => {
         const obj: any = { usuario_id: user.id }
         for (const c of campos) obj[c] = item[c] ?? null
         return obj
       })
+
       const { error } = await supabase.from(tabla).insert(filas)
       if (error) throw error
     }
@@ -142,7 +158,8 @@ const confirmarBorrar = async () => {
     ])
     modalBorrarAbierto.value = false
     mostrar('Datos eliminados')
-  } catch {
+  } catch (e) {
+    console.error(e)
     mostrar('Error al eliminar')
   }
 }
@@ -172,6 +189,9 @@ const previewMoneda = computed(() => {
 })
 
 onMounted(cargar)
+watch(usuario, (u) => {
+  if (u && !config.value) cargar()
+})
 </script>
 
 <template>
@@ -200,12 +220,12 @@ onMounted(cargar)
           <input :value="config.locale" disabled class="input-disabled" />
         </label>
 
+        <!-- 👇 Solo dos opciones: claro y oscuro -->
         <label>
           Tema
           <select v-model="config.tema" @change="onCambioTema">
             <option value="claro">Claro</option>
             <option value="oscuro">Oscuro</option>
-            <option value="sistema">Sistema (auto)</option>
           </select>
         </label>
       </div>
@@ -220,11 +240,15 @@ onMounted(cargar)
       </button>
     </section>
 
+    <section v-else class="card">
+      <p class="muted">Cargando preferencias…</p>
+    </section>
+
     <section class="card cuenta-card">
       <div class="cuenta-info">
-        <div class="avatar-lg">{{ usuario?.nombre?.charAt(0).toUpperCase() }}</div>
+        <div class="avatar-lg">{{ usuario?.nombre?.charAt(0).toUpperCase() || '?' }}</div>
         <div>
-          <div class="cuenta-nombre">{{ usuario?.nombre }}</div>
+          <div class="cuenta-nombre">{{ usuario?.nombre || 'Usuario' }}</div>
           <div class="muted">{{ usuario?.email }}</div>
         </div>
       </div>

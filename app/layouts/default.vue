@@ -5,7 +5,8 @@ const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 const route = useRoute()
 const sidebarAbierto = ref(false)
-const usuario = ref<Usuario | null>(null)
+
+const usuario = useState<Usuario | null>('usuario', () => null)
 
 const salir = async () => {
   await supabase.auth.signOut()
@@ -27,27 +28,26 @@ const navLinks = [
 
 const inicial = computed(() => usuario.value?.nombre?.charAt(0).toUpperCase() ?? '?')
 
-const aplicarTema = (tema: 'claro' | 'oscuro' | 'sistema') => {
+// 👇 Solo dos temas
+const aplicarTema = (tema: string) => {
   const html = document.documentElement
   if (tema === 'oscuro') {
     html.classList.add('dark')
-  } else if (tema === 'claro') {
-    html.classList.remove('dark')
   } else {
-    const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    html.classList.toggle('dark', preferDark)
+    html.classList.remove('dark')
   }
 }
 
-// Cargar usuario y ajustes al montar
 const cargarUsuario = async () => {
   const u = user.value
   if (!u) return
+
   usuario.value = {
     id: u.id,
     email: u.email ?? '',
     nombre: u.user_metadata?.nombre ?? 'Usuario',
   }
+
   const config = await ajustes.obtener(u.id)
   if (config) {
     setMoneda(config.moneda, config.locale)
@@ -62,22 +62,18 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
 
 <template>
   <div class="layout">
-    <!-- Backdrop móvil -->
     <div
       v-if="sidebarAbierto"
       class="backdrop"
       @click="sidebarAbierto = false"
     ></div>
 
-    <!-- Sidebar -->
     <aside class="sidebar" :class="{ abierto: sidebarAbierto }">
-      <!-- Marca -->
       <NuxtLink to="/" class="brand">
         <span class="brand-icon">💰</span>
         <span class="brand-name">FinScope</span>
       </NuxtLink>
 
-      <!-- Nav -->
       <nav class="nav">
         <NuxtLink
           v-for="l in navLinks"
@@ -90,7 +86,6 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
         </NuxtLink>
       </nav>
 
-      <!-- Tarjeta de ahorro (opcional) -->
       <div class="sidebar-footer">
         <div class="user-chip">
           <div class="avatar">{{ inicial }}</div>
@@ -109,9 +104,7 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
       </div>
     </aside>
 
-    <!-- Contenido principal -->
     <div class="main-wrapper">
-      <!-- Topbar móvil -->
       <header class="topbar">
         <button class="menu-toggle" @click="sidebarAbierto = !sidebarAbierto" aria-label="Menú">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -135,14 +128,12 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
 </template>
 
 <style scoped>
-/* ============ LAYOUT ============ */
 .layout {
   min-height: 100vh;
   display: flex;
   position: relative;
 }
 
-/* ============ BACKDROP MÓVIL ============ */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -157,7 +148,6 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   to { opacity: 1; }
 }
 
-/* ============ SIDEBAR ============ */
 .sidebar {
   position: fixed;
   top: 0;
@@ -167,15 +157,12 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   display: flex;
   flex-direction: column;
   padding: 1.35rem 1rem 1rem;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: var(--surface);
   border-right: 1px solid var(--border);
   z-index: 100;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ============ MARCA ============ */
 .brand {
   display: flex;
   align-items: center;
@@ -203,7 +190,6 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   letter-spacing: -0.03em;
 }
 
-/* ============ NAV ============ */
 .nav {
   display: flex;
   flex-direction: column;
@@ -252,7 +238,6 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
 .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
 .nav-label { flex: 1; }
 
-/* ============ SIDEBAR FOOTER ============ */
 .sidebar-footer {
   border-top: 1px solid var(--border);
   padding-top: 1rem;
@@ -284,10 +269,7 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   flex-shrink: 0;
 }
 
-.user-meta {
-  flex: 1;
-  min-width: 0;
-}
+.user-meta { flex: 1; min-width: 0; }
 
 .user-name {
   font-size: 0.82rem;
@@ -325,7 +307,6 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   color: var(--danger);
 }
 
-/* ============ MAIN ============ */
 .main-wrapper {
   flex: 1;
   margin-left: 240px;
@@ -334,16 +315,13 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   flex-direction: column;
 }
 
-/* ============ TOPBAR (solo móvil) ============ */
 .topbar {
   display: none;
   position: sticky;
   top: 0;
   z-index: 80;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
   align-items: center;
   gap: 0.75rem;
@@ -398,34 +376,22 @@ watch(() => route.path, () => (sidebarAbierto.value = false))
   background: linear-gradient(135deg, #10b981, #34d399);
 }
 
-/* ============ CONTENT ============ */
 .content {
   flex: 1;
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
   padding: 2rem 2rem 3rem;
-  position: relative;
-  z-index: 1;
 }
 
-/* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
-  .sidebar {
-    transform: translateX(-100%);
-  }
+  .sidebar { transform: translateX(-100%); }
   .sidebar.abierto {
     transform: translateX(0);
     box-shadow: var(--shadow-xl);
   }
-  .main-wrapper {
-    margin-left: 0;
-  }
-  .topbar {
-    display: flex;
-  }
-  .content {
-    padding: 1.25rem 1rem 2.5rem;
-  }
+  .main-wrapper { margin-left: 0; }
+  .topbar { display: flex; }
+  .content { padding: 1.25rem 1rem 2.5rem; }
 }
 </style>
