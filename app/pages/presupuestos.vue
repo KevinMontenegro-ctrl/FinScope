@@ -20,27 +20,37 @@ const form = reactive({
 const cargar = async () => {
   if (!usuario.value) return
   const uid = usuario.value.id
+
   cats.value = await categorias.porTipo(uid, 'gasto')
-  lista.value = (await presupuestos.listar(uid)).filter(
+
+  const todos = await presupuestos.listar(uid)
+  lista.value = todos.filter(
     p => p.anio === form.anio && p.mes === form.mes
   )
 
+  // Calcular cuánto se ha gastado por categoría en ese mes
   const gs = await gastos.porMes(uid, form.anio, form.mes)
   gastado.value = gs.reduce((acc: Record<string, number>, g: Gasto) => {
-    acc[g.categoriaId] = (acc[g.categoriaId] || 0) + g.monto
+    acc[g.categoria_id] = (acc[g.categoria_id] || 0) + g.monto
     return acc
   }, {})
 }
 
 const crear = async () => {
-  if (!usuario.value || !form.categoriaId || !form.montoLimite) return
+  if (!usuario.value) return
+  if (!form.categoriaId || !form.montoLimite || form.montoLimite <= 0) {
+    alert('Selecciona una categoría y un límite mayor a 0')
+    return
+  }
+
   await presupuestos.crear({
     usuarioId: usuario.value.id,
     categoriaId: form.categoriaId,
     montoLimite: Number(form.montoLimite),
     anio: Number(form.anio),
     mes: Number(form.mes),
-  })
+  } as any)
+
   Object.assign(form, { categoriaId: '', montoLimite: 0 })
   await cargar()
 }
@@ -50,12 +60,19 @@ const eliminar = async (id: string) => {
   await cargar()
 }
 
+// 👇 Usa SNAKE_CASE
 const nombreCat = (id: string) => cats.value.find(c => c.id === id)?.nombre ?? '—'
 const colorCat = (id: string) => cats.value.find(c => c.id === id)?.color ?? '#94a3b8'
-const porcentaje = (p: Presupuesto) =>
-  Math.min(100, ((gastado.value[p.categoriaId] || 0) / p.montoLimite) * 100)
+
+const porcentaje = (p: Presupuesto) => {
+  if (!p.monto_limite || p.monto_limite <= 0) return 0
+  return Math.min(100, ((gastado.value[p.categoria_id] || 0) / p.monto_limite) * 100)
+}
+
 const excedido = (p: Presupuesto) =>
-  (gastado.value[p.categoriaId] || 0) > p.montoLimite
+  (gastado.value[p.categoria_id] || 0) > p.monto_limite
+
+const gastadoCat = (p: Presupuesto) => gastado.value[p.categoria_id] || 0
 
 onMounted(cargar)
 watch(() => [form.anio, form.mes], cargar)
@@ -70,6 +87,18 @@ watch(() => [form.anio, form.mes], cargar)
       </div>
     </header>
 
+    <section class="card info-card">
+      <div class="info-icon">💡</div>
+      <div>
+        <strong>¿Cómo funcionan los presupuestos?</strong>
+        <p class="muted" style="margin-top:.25rem">
+          Define un límite de gasto por categoría. La barra se llena con lo que
+          has gastado en el mes seleccionado. Si pasa el 100%, la barra se pone
+          roja y se marca como <em>Excedido</em>.
+        </p>
+      </div>
+    </section>
+
     <section class="card form-card">
       <h2>Nuevo presupuesto</h2>
       <form @submit.prevent="crear">
@@ -77,7 +106,14 @@ watch(() => [form.anio, form.mes], cargar)
           <option value="">Selecciona una categoría…</option>
           <option v-for="c in cats" :key="c.id" :value="c.id">{{ c.nombre }}</option>
         </select>
-        <input v-model.number="form.montoLimite" type="number" step="0.01" placeholder="Límite mensual" required />
+        <input
+          v-model.number="form.montoLimite"
+          type="number"
+          step="0.01"
+          min="1"
+          placeholder="Límite mensual"
+          required
+        />
         <div class="row-2">
           <input v-model.number="form.mes" type="number" min="1" max="12" placeholder="Mes" />
           <input v-model.number="form.anio" type="number" placeholder="Año" />
@@ -101,11 +137,11 @@ watch(() => [form.anio, form.mes], cargar)
       <div class="pres-head">
         <div>
           <div class="pres-name">
-            <span class="cat-dot" :style="{ background: colorCat(p.categoriaId) }"></span>
-            {{ nombreCat(p.categoriaId) }}
+            <span class="cat-dot" :style="{ background: colorCat(p.categoria_id) }"></span>
+            {{ nombreCat(p.categoria_id) }}
           </div>
           <div class="muted pres-sub">
-            {{ money(gastado[p.categoriaId] || 0) }} de {{ money(p.montoLimite) }}
+            {{ money(gastadoCat(p)) }} de {{ money(p.monto_limite) }}
             <span v-if="excedido(p)" class="badge badge-danger">Excedido</span>
           </div>
         </div>
@@ -127,6 +163,19 @@ watch(() => [form.anio, form.mes], cargar)
 
 <style scoped>
 .page { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.info-card {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  background: linear-gradient(135deg, rgba(16,185,129,0.05), rgba(255,255,255,1));
+  border-color: rgba(16,185,129,0.2);
+}
+.info-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.info-card p { margin: 0; font-size: 0.85rem; line-height: 1.5; }
 
 .form-card { padding: 1.25rem 1.35rem; }
 .form-card h2 { margin-bottom: 1rem; }
@@ -155,6 +204,7 @@ watch(() => [form.anio, form.mes], cargar)
   margin-bottom: 0.75rem;
   gap: 1rem;
 }
+
 .pres-name {
   font-family: 'Outfit', sans-serif;
   font-size: 0.95rem;
@@ -164,10 +214,13 @@ watch(() => [form.anio, form.mes], cargar)
   align-items: center;
   gap: 0.55rem;
 }
+
 .cat-dot {
-  width: 10px; height: 10px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   box-shadow: 0 0 0 3px rgba(15,23,42,0.04);
 }
+
 .pres-sub { margin-top: 0.3rem; font-size: 0.8rem; }
 </style>

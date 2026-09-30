@@ -12,22 +12,28 @@ const cargar = async () => {
 }
 
 const crear = async () => {
-  if (!usuario.value || !form.nombre || !form.montoObjetivo) return
+  if (!usuario.value) return
+  if (!form.nombre || !form.montoObjetivo || form.montoObjetivo <= 0) {
+    alert('Ingresa un nombre y un monto objetivo mayor a 0')
+    return
+  }
+
   await metas.crear({
     usuarioId: usuario.value.id,
-    nombre: form.nombre,
+    nombre: form.nombre.trim(),
     montoObjetivo: Number(form.montoObjetivo),
     montoActual: 0,
     fechaLimite: form.fechaLimite || undefined,
     completada: false,
-  })
+  } as any)
+
   Object.assign(form, { nombre: '', montoObjetivo: 0, fechaLimite: '' })
   await cargar()
 }
 
 const aportar = async (id: string) => {
   const m = Number(aporte[id] || 0)
-  if (!m) return
+  if (!m || m <= 0) return
   await metas.aportar(id, m)
   aporte[id] = 0
   await cargar()
@@ -38,8 +44,13 @@ const eliminar = async (id: string) => {
   await cargar()
 }
 
-const porcentaje = (m: Meta) => Math.min(100, (m.montoActual / m.montoObjetivo) * 100)
-const restante = (m: Meta) => Math.max(0, m.montoObjetivo - m.montoActual)
+// 👇 Usa SNAKE_CASE (como vienen de Supabase)
+const porcentaje = (m: Meta) => {
+  if (!m.monto_objetivo || m.monto_objetivo <= 0) return 0
+  return Math.min(100, (m.monto_actual / m.monto_objetivo) * 100)
+}
+
+const restante = (m: Meta) => Math.max(0, m.monto_objetivo - m.monto_actual)
 
 onMounted(cargar)
 </script>
@@ -61,7 +72,7 @@ onMounted(cargar)
       <h2>Nueva meta</h2>
       <form @submit.prevent="crear">
         <input v-model="form.nombre" placeholder="Nombre de la meta" required />
-        <input v-model.number="form.montoObjetivo" type="number" step="0.01" placeholder="Monto objetivo" required />
+        <input v-model.number="form.montoObjetivo" type="number" step="0.01" min="1" placeholder="Monto objetivo" required />
         <input v-model="form.fechaLimite" type="date" />
         <button class="primary">Crear meta</button>
       </form>
@@ -79,12 +90,12 @@ onMounted(cargar)
         <div>
           <div class="meta-name">{{ m.nombre }}</div>
           <div class="muted meta-sub">
-            {{ money(m.montoActual) }} de {{ money(m.montoObjetivo) }}
+            {{ money(m.monto_actual) }} de {{ money(m.monto_objetivo) }}
             <span v-if="m.completada" class="badge badge-success">Completada</span>
             <span v-else>· faltan {{ money(restante(m)) }}</span>
           </div>
-          <div v-if="m.fechaLimite" class="muted meta-fecha">
-            Límite: {{ m.fechaLimite.slice(0, 10) }}
+          <div v-if="m.fecha_limite" class="muted meta-fecha">
+            Límite: {{ m.fecha_limite.slice(0, 10) }}
           </div>
         </div>
         <div class="porcentaje" :class="{ 'is-complete': m.completada }">
@@ -97,7 +108,7 @@ onMounted(cargar)
       </div>
 
       <div class="meta-actions">
-        <input v-model.number="aporte[m.id]" type="number" step="0.01" placeholder="Cantidad a aportar" />
+        <input v-model.number="aporte[m.id]" type="number" step="0.01" min="0" placeholder="Cantidad a aportar" />
         <button class="primary" @click="aportar(m.id)">Aportar</button>
         <button class="btn-danger" @click="eliminar(m.id)">Eliminar</button>
       </div>
@@ -129,7 +140,7 @@ onMounted(cargar)
 .meta-card { transition: border-color 0.2s, box-shadow 0.2s; }
 .meta-card.completa {
   background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
-  border-color: rgba(16,185,129,0.25);
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .meta-head {
